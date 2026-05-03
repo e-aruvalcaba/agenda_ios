@@ -49,13 +49,16 @@ export default function History(){
       {loading && <Loader />}
       <div>
         <h2 style={{margin:'0 0 16px 0',fontSize:20,fontWeight:700}}>📜 Historial de citas</h2>
-        <div style={{display:'flex',gap:8,alignItems:'center',marginBottom:12,flexWrap:'wrap'}}>
+        <div style={{display:'flex',gap:8,alignItems:'center',marginBottom:12,flexWrap:'wrap', width: '100%'}}>
           <label style={{fontSize:14,fontWeight:500}}>Seleccionar fecha:</label>
           <input type="date" value={date} onChange={e=>setDate(e.target.value)} />
-          <button onClick={load} style={{fontSize:13}}>🔍 Buscar</button>
-          <button onClick={exportToCSV} style={{fontSize:13}}>📥 Descargar CSV</button>
-        </div>
+          {/* <button onClick={load} style={{fontSize:13}}>🔍 Buscar</button> */}
 
+        </div>
+          <div style={{display: 'flex', justifyContent: 'flex-end'}}>
+          <button onClick={exportToCSV} style={{fontSize:13}}>📥 Descargar CSV</button>
+
+          </div>
         {items.length===0 ? (
           <div className="card small" style={{padding:16,textAlign:'center'}}>📭 No hay citas para {format(parseISO(date),'PPP',{locale:es})}</div>
         ) : (
