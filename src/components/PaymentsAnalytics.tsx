@@ -14,7 +14,9 @@ import { format, parseISO, startOfWeek, endOfWeek, startOfMonth, endOfMonth, sta
 import { es } from 'date-fns/locale'
 import Loader from './Loader'
 import Modal from './Modal'
+import PaymentForm from './PaymentForm'
 import { formatISO } from 'date-fns'
+import Swal from 'sweetalert2'
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend)
 
@@ -85,6 +87,8 @@ export default function PaymentsAnalytics() {
   const [loading, setLoading] = useState(true)
   const [customStartDate, setCustomStartDate] = useState('')
   const [customEndDate, setCustomEndDate] = useState('')
+  const [editingPayment, setEditingPayment] = useState<Payment | null>(null)
+  const [showEditModal, setShowEditModal] = useState(false)
 
   // form state
   const [amount, setAmount] = useState<number | ''>('')
@@ -103,7 +107,10 @@ export default function PaymentsAnalytics() {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
     const amt = typeof amount === 'number' ? amount : parseFloat(String(amount))
-    if (isNaN(amt)) return alert('Cantidad inválida')
+    if (isNaN(amt)) {
+      await Swal.fire('Error', 'Cantidad inválida', 'error')
+      return
+    }
     
     // Parse datetime-local string and create Date in local timezone, then convert to ISO
     const [datePart, timePart] = datetime.split('T')
@@ -118,6 +125,7 @@ export default function PaymentsAnalytics() {
       concept,
       method,
     })
+    await Swal.fire('Éxito', 'Pago registrado correctamente', 'success')
     setAmount('')
     setConcept('')
     setMethod('efectivo')
@@ -126,9 +134,9 @@ export default function PaymentsAnalytics() {
     load()
   }
 
-  const exportToCSV = () => {
+  const exportToCSV = async () => {
     if (filtered.length === 0) {
-      alert('No hay pagos para exportar en este período')
+      await Swal.fire('Advertencia', 'No hay pagos para exportar en este período', 'warning')
       return
     }
 
@@ -159,6 +167,39 @@ export default function PaymentsAnalytics() {
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
+  }
+
+  const handleEdit = (payment: Payment) => {
+    setEditingPayment(payment)
+    setShowEditModal(true)
+  }
+
+  const handleDelete = async (id: number) => {
+    const result = await Swal.fire({
+      title: '¿Eliminar pago?',
+      text: 'Esta acción no se puede deshacer',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#dc3545',
+      cancelButtonColor: '#6c757d',
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar'
+    })
+    if (result.isConfirmed) {
+      await db.deletePayment(id)
+      await Swal.fire('Eliminado', 'El pago ha sido eliminado', 'success')
+      load()
+    }
+  }
+
+  const handleEditClose = () => {
+    setShowEditModal(false)
+    setEditingPayment(null)
+  }
+
+  const handleEditSaved = () => {
+    load()
+    handleEditClose()
   }
 
   const filtered = range === 'custom' ? filterByRange(allPayments, 'custom', customStartDate, customEndDate) : filterByRange(allPayments, range)
@@ -348,6 +389,10 @@ export default function PaymentsAnalytics() {
                   {p.method === 'efectivo' ? '💵 Efectivo' : p.method === 'tarjeta' ? '🏧 Tarjeta' : '🏦 Transferencia'}
                 </div>
               </div>
+              <div className="btn-group" style={{marginTop:8, display: 'flex', justifyContent: 'space-between'}}>
+                <button onClick={() => handleEdit(p)} style={{fontSize:13}}>✏️ Editar</button>
+                <button onClick={() => handleDelete(p.id!)} style={{fontSize:13,background:'#dc3545'}}>🗑️ Eliminar</button>
+              </div>
             </li>
           ))}
         </ul>
@@ -393,6 +438,16 @@ export default function PaymentsAnalytics() {
               </button>
             </div>
           </form>
+        </Modal>
+      )}
+
+      {showEditModal && editingPayment && (
+        <Modal onClose={handleEditClose}>
+          <PaymentForm
+            onClose={handleEditClose}
+            onSaved={handleEditSaved}
+            initialPayment={editingPayment}
+          />
         </Modal>
       )}
     </>

@@ -3,11 +3,16 @@ import { db, Appointment } from '../db'
 import { format, parseISO } from 'date-fns'
 import { es } from 'date-fns/locale'
 import Loader from './Loader'
+import Modal from './Modal'
+import AppointmentForm from './AppointmentForm'
+import Swal from 'sweetalert2'
 
 export default function History(){
   const [date, setDate] = useState<string>(format(new Date(),'yyyy-MM-dd'))
   const [items, setItems] = useState<Appointment[]>([])
   const [loading, setLoading] = useState(false)
+  const [editingAppointment, setEditingAppointment] = useState<Appointment | null>(null)
+  const [showEditModal, setShowEditModal] = useState(false)
 
   useEffect(()=>{ load() },[date])
   const load = async ()=>{
@@ -20,7 +25,7 @@ export default function History(){
 
   const exportToCSV = () => {
     if (!items || items.length === 0) {
-      alert('No hay citas para exportar en este filtro')
+      Swal.fire('Advertencia', 'No hay citas para exportar en este filtro', 'warning')
       return
     }
 
@@ -42,6 +47,39 @@ export default function History(){
     a.click()
     document.body.removeChild(a)
     URL.revokeObjectURL(url)
+  }
+
+  const handleEdit = (appointment: Appointment) => {
+    setEditingAppointment(appointment)
+    setShowEditModal(true)
+  }
+
+  const handleDelete = async (id: number) => {
+    const result = await Swal.fire({
+      title: '¿Eliminar cita?',
+      text: 'Esta acción no se puede deshacer',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#dc3545',
+      cancelButtonColor: '#6c757d',
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar'
+    })
+    if (result.isConfirmed) {
+      await db.deleteAppointment(id)
+      await Swal.fire('Eliminado', 'La cita ha sido eliminada', 'success')
+      load()
+    }
+  }
+
+  const handleEditClose = () => {
+    setShowEditModal(false)
+    setEditingAppointment(null)
+  }
+
+  const handleEditSaved = () => {
+    load()
+    handleEditClose()
   }
 
   return (
@@ -76,16 +114,29 @@ export default function History(){
                   </div>
                 </div>
                 {it.description && (
-                  <div style={{marginBottom:0}}>
+                  <div style={{marginBottom:10}}>
                     <div style={{fontSize:12,color:'var(--text-light)',marginBottom:4}}>Notas</div>
                     <div style={{fontSize:14,lineHeight:1.4}}>{it.description}</div>
                   </div>
                 )}
+                <div className="btn-group" style={{marginTop:8, display: 'flex', justifyContent: 'space-between'}}>
+                  <button onClick={() => handleEdit(it)} style={{fontSize:13}}>✏️ Editar</button>
+                  <button onClick={() => handleDelete(it.id!)} style={{fontSize:13,background:'#dc3545'}}>🗑️ Eliminar</button>
+                </div>
               </li>
             ))}
           </ul>
         )}
       </div>
+      {showEditModal && editingAppointment && (
+        <Modal onClose={handleEditClose}>
+          <AppointmentForm
+            onClose={handleEditClose}
+            onSaved={handleEditSaved}
+            initialAppointment={editingAppointment}
+          />
+        </Modal>
+      )}
     </>
   )
 }

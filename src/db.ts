@@ -58,6 +58,14 @@ class AgendaDB extends Dexie {
       }
     }
   }
+
+  async deleteAppointment(id: number){
+    await this.appointments.delete(id)
+  }
+
+  async deletePayment(id: number){
+    await this.payments.delete(id)
+  }
 }
 
 export const db = new AgendaDB()

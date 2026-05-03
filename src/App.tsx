@@ -7,6 +7,7 @@ import InstallPrompt from "./components/InstallPrompt";
 import History from "./components/History";
 import ImportConfirmModal from "./components/ImportConfirmModal";
 import { db } from "./db";
+import Swal from "sweetalert2";
 
 type Tab = "citas" | "pagos" | "historial";
 
@@ -68,18 +69,18 @@ export default function App() {
       } else {
         // No existing data, import directly
         await db.importAll(parsed, 'replace');
-        alert('Datos importados correctamente');
+        await Swal.fire('Éxito', 'Datos importados correctamente', 'success');
         setRefreshKey((k) => k + 1);
       }
     } catch (e) {
-      alert('Archivo inválido');
+      await Swal.fire('Error', 'Archivo inválido', 'error');
     }
   };
 
   const handleImportReplace = async () => {
     if (!importData) return;
     await db.importAll(importData, 'replace');
-    alert('Datos reemplazados correctamente');
+    await Swal.fire('Éxito', 'Datos reemplazados correctamente', 'success');
     setShowImportConfirm(false);
     setImportData(null);
     setRefreshKey((k) => k + 1);
@@ -88,7 +89,7 @@ export default function App() {
   const handleImportMerge = async () => {
     if (!importData) return;
     await db.importAll(importData, 'merge');
-    alert('Datos fusionados correctamente');
+    await Swal.fire('Éxito', 'Datos fusionados correctamente', 'success');
     setShowImportConfirm(false);
     setImportData(null);
     setRefreshKey((k) => k + 1);
@@ -111,37 +112,45 @@ export default function App() {
           top: 0,
           left: 0,
           right: 0,
-          background: 'rgba(13, 110, 253, 0.1)',
-          borderBottom: '2px solid #0d6efd',
-          padding: '12px 16px',
+          background: '#0d6efd',
+          borderBottom: '3px solid #0a58ca',
+          padding: '14px 16px',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          zIndex: 999,
+          zIndex: 9999,
           fontSize: 14,
+          boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
         }}>
-          <span style={{fontWeight: 500}}>📦 Nueva versión disponible</span>
+          <span style={{fontWeight: 600, color: 'white'}}>📦 Nueva versión disponible</span>
           <button
             onClick={() => {
               setShowUpdatePrompt(false);
               window.location.reload();
             }}
             style={{
-              background: '#0d6efd',
-              color: 'white',
+              background: 'white',
+              color: '#0d6efd',
               border: 'none',
-              padding: '6px 12px',
+              padding: '8px 16px',
               borderRadius: 4,
               cursor: 'pointer',
               fontSize: 13,
-              fontWeight: 600,
+              fontWeight: 700,
+              transition: 'all 0.2s',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = '#f0f0f0'
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'white'
             }}
           >
             Actualizar
           </button>
         </div>
       )}
-      <div className="topbar">
+      <div className="topbar" style={showUpdatePrompt ? {paddingTop: '55px'} : {}}>
         <h1>📋 Agenda</h1>
         <div style={{ position: "relative" }}>
           <button
