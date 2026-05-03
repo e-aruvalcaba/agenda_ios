@@ -73,7 +73,7 @@ export default function InstallPrompt(){
         </div>
         <div style={{display:'flex',gap:8}}>
           {!isIos && <button onClick={onInstallClick} style={{padding:'8px 12px',background:'var(--primary)',color:'#fff',border:'none',borderRadius:8,cursor:'pointer'}}>Instalar</button>}
-          <button onClick={onDismiss} style={{padding:'8px 12px',background:'rgba(0,0,0,0.06)',border:'none',borderRadius:8,cursor:'pointer'}}>Cerrar</button>
+          <button onClick={onDismiss} style={{padding:'8px 12px',background:'rgba(0,0,0,0.06)',border:'none',borderRadius:8,cursor:'pointer', color: 'black'}}>Cerrar</button>
         </div>
       </div>
     </div>
