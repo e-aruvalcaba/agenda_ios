@@ -36,6 +36,14 @@ self.addEventListener('activate', event => {
           .map(k => caches.delete(k))
       ))
       .then(() => self.clients.claim()) // toma control de todos los tabs abiertos
+      .then(() => {
+        // Notificar a todos los clientes que hay una nueva versión
+        return self.clients.matchAll().then(clients => {
+          clients.forEach(client => {
+            client.postMessage({ type: 'SW_UPDATED' })
+          })
+        })
+      })
   )
 })
 

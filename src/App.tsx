@@ -18,11 +18,20 @@ export default function App() {
   const [showImportConfirm, setShowImportConfirm] = useState(false);
   const [importData, setImportData] = useState<any>(null);
   const [existingCounts, setExistingCounts] = useState({ appts: 0, pays: 0 });
+  const [showUpdatePrompt, setShowUpdatePrompt] = useState(false);
 
   useEffect(() => {
     if (navigator.storage && (navigator as any).storage.persist) {
       (navigator as any).storage.persist();
     }
+  }, []);
+
+  useEffect(() => {
+    const handleSWUpdate = () => {
+      setShowUpdatePrompt(true);
+    };
+    window.addEventListener('swUpdated', handleSWUpdate);
+    return () => window.removeEventListener('swUpdated', handleSWUpdate);
   }, []);
 
   const handleExport = async () => {
@@ -96,6 +105,42 @@ export default function App() {
 
   return (
     <div className="app">
+      {showUpdatePrompt && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          background: 'rgba(13, 110, 253, 0.1)',
+          borderBottom: '2px solid #0d6efd',
+          padding: '12px 16px',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          zIndex: 999,
+          fontSize: 14,
+        }}>
+          <span style={{fontWeight: 500}}>📦 Nueva versión disponible</span>
+          <button
+            onClick={() => {
+              setShowUpdatePrompt(false);
+              window.location.reload();
+            }}
+            style={{
+              background: '#0d6efd',
+              color: 'white',
+              border: 'none',
+              padding: '6px 12px',
+              borderRadius: 4,
+              cursor: 'pointer',
+              fontSize: 13,
+              fontWeight: 600,
+            }}
+          >
+            Actualizar
+          </button>
+        </div>
+      )}
       <div className="topbar">
         <h1>📋 Agenda</h1>
         <div style={{ position: "relative" }}>
