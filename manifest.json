@@ -1,0 +1,20 @@
+{
+  "short_name": "Agenda",
+  "name": "Agenda iOS",
+  "description": "Agenda personal offline-first",
+  "icons": [
+    {
+      "src": "/agenda_ios/icon.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "/agenda_ios/",
+  "scope": "/agenda_ios/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0d6efd",
+  "orientation": "portrait",
+  "lang": "es-MX"
+}

@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="es-MX">
+  <head>
+    <meta charset="utf-8" />
+    <!-- viewport: maximum-scale=1 evita zoom no deseado en inputs iOS -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Agenda iOS</title>
+    <link rel="manifest" href="/agenda_ios/manifest.json" />
+
+    <!-- PWA color de tema (Android Chrome toolbar / iOS status bar) -->
+    <meta name="theme-color" content="#0d6efd" />
+
+    <!-- iOS: habilita modo standalone (pantalla completa como app nativa) -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <!-- iOS: color de la barra de estado. "black-translucent" da más espacio vertical -->
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <!-- iOS: nombre que aparece debajo del icono en la home screen -->
+    <meta name="apple-mobile-web-app-title" content="Agenda" />
+
+    <!-- Icono para pantalla de inicio iOS (usa SVG; para soporte máximo reemplaza con PNG 180x180) -->
+    <link rel="apple-touch-icon" href="/agenda_ios/icon.svg" />
+
+    <!-- Evita que Safari detecte números como teléfonos/fechas accidentalmente -->
+    <meta name="format-detection" content="telephone=no" />
+    <script type="module" crossorigin src="/agenda_ios/assets/index-6deba945.js"></script>
+    <link rel="stylesheet" href="/agenda_ios/assets/index-7a1d5871.css">
+  </head>
+  <body>
+    <div id="root"></div>
+    
+  </body>
+</html>
