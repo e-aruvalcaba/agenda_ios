@@ -1,13 +1,12 @@
 import React, { useEffect, useState } from "react";
 import TodayList from "./components/TodayList";
 import AppointmentForm from "./components/AppointmentForm";
-import Payments from "./components/Payments";
-import Analytics from "./components/Analytics";
+import PaymentsAnalytics from "./components/PaymentsAnalytics";
 import Modal from "./components/Modal";
 import History from "./components/History";
 import { db } from "./db";
 
-type Tab = "citas" | "pagos" | "analitica" | "historial";
+type Tab = "citas" | "pagos" | "historial";
 
 export default function App() {
   const [tab, setTab] = useState<Tab>("citas");
@@ -39,8 +38,29 @@ export default function App() {
     const text = await file.text();
     try {
       const parsed = JSON.parse(text);
-      await db.importAll(parsed);
-      alert("Importado correctamente");
+
+      // Detect if there is existing data
+      const [existingAppts, existingPays] = await Promise.all([
+        db.appointments.count(),
+        db.payments.count(),
+      ]);
+      const hasData = existingAppts > 0 || existingPays > 0;
+
+      let mode: 'replace' | 'merge' = 'replace';
+      if (hasData) {
+        const choice = window.confirm(
+          `Ya existen ${existingAppts} cita(s) y ${existingPays} pago(s).
+
+` +
+          `• Aceptar → REEMPLAZAR todo con los datos del respaldo
+` +
+          `• Cancelar → FUSIONAR (agregar respaldo sin borrar datos actuales)`
+        );
+        mode = choice ? 'replace' : 'merge';
+      }
+
+      await db.importAll(parsed, mode);
+      alert(mode === 'replace' ? 'Datos reemplazados correctamente' : 'Datos fusionados correctamente');
       setRefreshKey((k) => k + 1);
     } catch (e) {
       alert("Archivo inválido");
@@ -167,13 +187,7 @@ export default function App() {
 
         {tab === "pagos" && (
           <div className="card">
-            <Payments key={tab} />
-          </div>
-        )}
-
-        {tab === "analitica" && (
-          <div className="card">
-            <Analytics key={tab} />
+            <PaymentsAnalytics key={tab} />
           </div>
         )}
 
@@ -205,13 +219,7 @@ export default function App() {
           className={tab === "pagos" ? "tab active" : "tab"}
           onClick={() => setTab("pagos")}
         >
-          Pagos
-        </button>
-        <button
-          className={tab === "analitica" ? "tab active" : "tab"}
-          onClick={() => setTab("analitica")}
-        >
-          Analítica
+          💰 Pagos
         </button>
         <button
           className={tab === "historial" ? "tab active" : "tab"}
