@@ -3,6 +3,7 @@ import TodayList from "./components/TodayList";
 import AppointmentForm from "./components/AppointmentForm";
 import PaymentsAnalytics from "./components/PaymentsAnalytics";
 import Modal from "./components/Modal";
+import InstallPrompt from "./components/InstallPrompt";
 import History from "./components/History";
 import ImportConfirmModal from "./components/ImportConfirmModal";
 import { db } from "./db";
@@ -197,6 +198,7 @@ export default function App() {
       </div>
 
       <div style={{ marginTop: 12 }}>
+        <InstallPrompt />
         {tab === "citas" && (
           <div className="grid">
             <div>
