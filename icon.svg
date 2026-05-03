@@ -1,6 +1,111 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 192 192">
-  <rect width="192" height="192" rx="24" fill="#0d6efd"/>
-  <g fill="#fff" font-family="sans-serif" font-size="72" font-weight="700" text-anchor="middle">
-    <text x="96" y="122">A</text>
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <defs>
+    <!-- Fondo degradado azul-cielo → azul-rey → púrpura-magenta -->
+    <linearGradient id="bgGrad" x1="0" y1="0" x2="1" y2="1" gradientUnits="objectBoundingBox">
+      <stop offset="0%"   stop-color="#b8d8f8"/>
+      <stop offset="45%"  stop-color="#4a5de8"/>
+      <stop offset="100%" stop-color="#b030d8"/>
+    </linearGradient>
+    <!-- Degradado interior del fondo (overlay cálido abajo-derecha) -->
+    <radialGradient id="bgOverlay" cx="80%" cy="80%" r="60%">
+      <stop offset="0%"   stop-color="#d040f0" stop-opacity="0.45"/>
+      <stop offset="100%" stop-color="#d040f0" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Cuaderno: sombra sutil -->
+    <filter id="bookShadow" x="-12%" y="-12%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="8" stdDeviation="14" flood-color="#2a3a9040" />
+    </filter>
+    <!-- Palomita: sombra suave -->
+    <filter id="checkShadow" x="-15%" y="-15%" width="140%" height="140%">
+      <feDropShadow dx="2" dy="6" stdDeviation="8" flood-color="#00000030" />
+    </filter>
+
+    <!-- Degradado palomita: naranja-teal -->
+    <linearGradient id="checkGrad" x1="0" y1="1" x2="1" y2="0" gradientUnits="objectBoundingBox">
+      <stop offset="0%"   stop-color="#00c8a8"/>
+      <stop offset="50%"  stop-color="#f87030"/>
+      <stop offset="100%" stop-color="#ff8820"/>
+    </linearGradient>
+
+    <!-- Degradado para el lomo del cuaderno -->
+    <linearGradient id="spineGrad" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%"   stop-color="#d0d8ee"/>
+      <stop offset="100%" stop-color="#eaeff8"/>
+    </linearGradient>
+
+    <!-- Gradiente 3D cuaderno (parte frontal, borde superior luminoso) -->
+    <linearGradient id="bookFace" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"   stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#f0f4fc"/>
+    </linearGradient>
+  </defs>
+
+  <!-- ── Fondo redondeado ── -->
+  <rect width="512" height="512" rx="112" fill="url(#bgGrad)"/>
+  <rect width="512" height="512" rx="112" fill="url(#bgOverlay)"/>
+
+  <!-- ── Cuaderno ── -->
+  <!-- Sombra del cuaderno (capa extra desplazada) -->
+  <rect x="156" y="110" width="226" height="296" rx="22" fill="#8090c030" />
+
+  <!-- Cuerpo principal del cuaderno -->
+  <rect x="148" y="100" width="226" height="296" rx="22" fill="url(#bookFace)" filter="url(#bookShadow)"/>
+
+  <!-- Lomo izquierdo (franja gris-azulada) -->
+  <rect x="148" y="100" width="56" height="296" rx="22" fill="url(#spineGrad)"/>
+  <!-- Tapa delantera superpuesta sobre lomo -->
+  <rect x="190" y="100" width="184" height="296" rx="0" fill="url(#bookFace)"/>
+  <!-- Borde derecho cuaderno -->
+  <rect x="355" y="100" width="19" height="296" rx="0" fill="url(#bookFace)"/>
+  <!-- Esquina top-right -->
+  <path d="M355 100 Q374 100 374 122 L374 100 Z" fill="url(#bookFace)"/>
+  <!-- Esquina bottom-right -->
+  <path d="M355 396 Q374 396 374 374 L374 396 Z" fill="url(#bookFace)"/>
+
+  <!-- Separador vertical lomo/página -->
+  <line x1="196" y1="104" x2="196" y2="392" stroke="#d8e2f4" stroke-width="1.5"/>
+
+  <!-- ── Argollas (3 anillos) ── -->
+  <!-- Anillo 1 -->
+  <rect x="133" y="170" width="32" height="18" rx="9" fill="#4a5de0"/>
+  <rect x="139" y="173" width="20" height="12" rx="6" fill="#d8dff8"/>
+  <!-- Anillo 2 -->
+  <rect x="133" y="247" width="32" height="18" rx="9" fill="#4a5de0"/>
+  <rect x="139" y="250" width="20" height="12" rx="6" fill="#d8dff8"/>
+  <!-- Anillo 3 -->
+  <rect x="133" y="324" width="32" height="18" rx="9" fill="#4a5de0"/>
+  <rect x="139" y="327" width="20" height="12" rx="6" fill="#d8dff8"/>
+
+  <!-- ── Líneas de texto (renglones) ── -->
+  <rect x="210" y="148" width="144" height="9" rx="4.5" fill="#c4d2ec"/>
+  <rect x="210" y="168" width="118" height="9" rx="4.5" fill="#c4d2ec"/>
+  <!-- líneas debajo del número -->
+  <rect x="210" y="318" width="144" height="9" rx="4.5" fill="#c4d2ec"/>
+  <rect x="210" y="338" width="108" height="9" rx="4.5" fill="#c4d2ec"/>
+  <rect x="210" y="358" width="126" height="9" rx="4.5" fill="#c4d2ec"/>
+
+  <!-- ── Número "15" ── -->
+  <text x="216" y="288" font-family="-apple-system,BlinkMacSystemFont,'Helvetica Neue',Arial,sans-serif"
+        font-size="78" font-weight="800" fill="#3a52d8" letter-spacing="-2">15</text>
+
+  <!-- ── Palomita (check) ── -->
+  <path d="M210 268 L252 318 L348 198"
+        stroke="url(#checkGrad)" stroke-width="36"
+        stroke-linecap="round" stroke-linejoin="round"
+        fill="none" filter="url(#checkShadow)"/>
+
+  <!-- ── Reloj pequeño (superpuesto, abajo a la derecha de la palomita) ── -->
+  <circle cx="334" cy="316" r="26" fill="white" opacity="0.92"/>
+  <circle cx="334" cy="316" r="21" fill="#eef3fc"/>
+  <!-- Manecillas -->
+  <line x1="334" y1="304" x2="334" y2="316" stroke="#4a5de8" stroke-width="3.5" stroke-linecap="round"/>
+  <line x1="334" y1="316" x2="344" y2="322" stroke="#4a5de8" stroke-width="3.5" stroke-linecap="round"/>
+  <!-- Punto central -->
+  <circle cx="334" cy="316" r="3" fill="#4a5de8"/>
+
+  <!-- ── Destello / sparkle esquina inferior derecha ── -->
+  <g transform="translate(448,450)" fill="white" opacity="0.85">
+    <path d="M0,-13 L2.2,-2.2 L13,0 L2.2,2.2 L0,13 L-2.2,2.2 L-13,0 L-2.2,-2.2 Z"/>
   </g>
 </svg>
