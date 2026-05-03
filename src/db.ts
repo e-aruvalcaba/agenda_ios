@@ -34,9 +34,14 @@ class AgendaDB extends Dexie {
   }
 
   async importAll(data:{appointments?:Appointment[],payments?:Payment[]}, mode: 'replace' | 'merge' = 'replace'){
+    if(mode === 'replace'){
+      // Always clear both tables in replace mode
+      await this.appointments.clear()
+      await this.payments.clear()
+    }
+
     if(data.appointments && data.appointments.length){
       if(mode === 'replace'){
-        await this.appointments.clear()
         await this.appointments.bulkAdd(data.appointments)
       } else {
         // Strip IDs so Dexie auto-increments new unique ones
@@ -46,7 +51,6 @@ class AgendaDB extends Dexie {
     }
     if(data.payments && data.payments.length){
       if(mode === 'replace'){
-        await this.payments.clear()
         await this.payments.bulkAdd(data.payments)
       } else {
         const toAdd = data.payments.map(({id:_,...rest})=>rest)

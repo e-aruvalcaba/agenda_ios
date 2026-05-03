@@ -8,7 +8,7 @@ import Loader from './Loader'
 
 export default function TodayList({date}:{date?:Date}){
   const [items, setItems] = useState<Appointment[]>([])
-  const [showCategorized, setShowCategorized] = useState(false)
+  const [showCategorized, setShowCategorized] = useState(true)
   const [nowMarker, setNowMarker] = useState<number>(Date.now())
   const [loading, setLoading] = useState(true)
   const target = date || new Date()

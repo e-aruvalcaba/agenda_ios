@@ -9,7 +9,13 @@ export default function AppointmentForm({onClose, initialDate, onSaved}:{onClose
 
   const submit = async (e:React.FormEvent)=>{
     e.preventDefault()
-    await db.appointments.add({clientName, datetime: new Date(datetime).toISOString(), description})
+    // Parse datetime-local string and create Date in local timezone, then convert to ISO
+    const [datePart, timePart] = datetime.split('T')
+    const [year, month, day] = datePart.split('-').map(Number)
+    const [hour, minute] = timePart.split(':').map(Number)
+    const dt = new Date(year, month - 1, day, hour, minute, 0)
+    const iso = dt.toISOString()
+    await db.appointments.add({clientName, datetime: iso, description})
     if(onSaved) onSaved()
     else alert('Cita creada')
     if(onClose) onClose()

@@ -4,6 +4,7 @@ import AppointmentForm from "./components/AppointmentForm";
 import PaymentsAnalytics from "./components/PaymentsAnalytics";
 import Modal from "./components/Modal";
 import History from "./components/History";
+import ImportConfirmModal from "./components/ImportConfirmModal";
 import { db } from "./db";
 
 type Tab = "citas" | "pagos" | "historial";
@@ -13,6 +14,9 @@ export default function App() {
   const [showModal, setShowModal] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const [showMenu, setShowMenu] = useState(false);
+  const [showImportConfirm, setShowImportConfirm] = useState(false);
+  const [importData, setImportData] = useState<any>(null);
+  const [existingCounts, setExistingCounts] = useState({ appts: 0, pays: 0 });
 
   useEffect(() => {
     if (navigator.storage && (navigator as any).storage.persist) {
@@ -46,25 +50,43 @@ export default function App() {
       ]);
       const hasData = existingAppts > 0 || existingPays > 0;
 
-      let mode: 'replace' | 'merge' = 'replace';
       if (hasData) {
-        const choice = window.confirm(
-          `Ya existen ${existingAppts} cita(s) y ${existingPays} pago(s).
-
-` +
-          `• Aceptar → REEMPLAZAR todo con los datos del respaldo
-` +
-          `• Cancelar → FUSIONAR (agregar respaldo sin borrar datos actuales)`
-        );
-        mode = choice ? 'replace' : 'merge';
+        // Show confirmation modal
+        setImportData(parsed);
+        setExistingCounts({ appts: existingAppts, pays: existingPays });
+        setShowImportConfirm(true);
+      } else {
+        // No existing data, import directly
+        await db.importAll(parsed, 'replace');
+        alert('Datos importados correctamente');
+        setRefreshKey((k) => k + 1);
       }
-
-      await db.importAll(parsed, mode);
-      alert(mode === 'replace' ? 'Datos reemplazados correctamente' : 'Datos fusionados correctamente');
-      setRefreshKey((k) => k + 1);
     } catch (e) {
-      alert("Archivo inválido");
+      alert('Archivo inválido');
     }
+  };
+
+  const handleImportReplace = async () => {
+    if (!importData) return;
+    await db.importAll(importData, 'replace');
+    alert('Datos reemplazados correctamente');
+    setShowImportConfirm(false);
+    setImportData(null);
+    setRefreshKey((k) => k + 1);
+  };
+
+  const handleImportMerge = async () => {
+    if (!importData) return;
+    await db.importAll(importData, 'merge');
+    alert('Datos fusionados correctamente');
+    setShowImportConfirm(false);
+    setImportData(null);
+    setRefreshKey((k) => k + 1);
+  };
+
+  const handleImportCancel = () => {
+    setShowImportConfirm(false);
+    setImportData(null);
   };
 
   const handleSaved = () => {
@@ -239,6 +261,16 @@ export default function App() {
             }}
           />
         </Modal>
+      )}
+
+      {showImportConfirm && (
+        <ImportConfirmModal
+          existingAppts={existingCounts.appts}
+          existingPays={existingCounts.pays}
+          onReplace={handleImportReplace}
+          onMerge={handleImportMerge}
+          onCancel={handleImportCancel}
+        />
       )}
     </div>
   );

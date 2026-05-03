@@ -18,6 +18,32 @@ export default function History(){
     setLoading(false)
   }
 
+  const exportToCSV = () => {
+    if (!items || items.length === 0) {
+      alert('No hay citas para exportar en este filtro')
+      return
+    }
+
+    const headers = ['Fecha', 'Hora', 'Cliente', 'Descripción']
+    const rows = items.map(it => {
+      const dt = new Date(it.datetime)
+      const fecha = format(dt, 'yyyy-MM-dd', { locale: es })
+      const hora = format(dt, 'HH:mm', { locale: es })
+      return [fecha, hora, it.clientName || '-', it.description || '-']
+    })
+
+    const csv = [headers, ...rows].map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n')
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `citas_${date}.csv`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  }
+
   return (
     <>
       {loading && <Loader />}
@@ -27,6 +53,7 @@ export default function History(){
           <label style={{fontSize:14,fontWeight:500}}>Seleccionar fecha:</label>
           <input type="date" value={date} onChange={e=>setDate(e.target.value)} />
           <button onClick={load} style={{fontSize:13}}>🔍 Buscar</button>
+          <button onClick={exportToCSV} style={{fontSize:13}}>📥 Descargar CSV</button>
         </div>
 
         {items.length===0 ? (

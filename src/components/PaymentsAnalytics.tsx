@@ -18,20 +18,25 @@ import { formatISO } from 'date-fns'
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend)
 
-type Range = 'day' | 'week' | 'month' | 'all'
+type Range = 'day' | 'month' | 'all' | 'custom'
 
-function filterByRange(payments: Payment[], range: Range): Payment[] {
+function filterByRange(payments: Payment[], range: Range, customStart?: string, customEnd?: string): Payment[] {
   const now = new Date()
   return payments.filter(p => {
     const d = new Date(p.date)
     if (range === 'day') {
       return d >= startOfDay(now) && d <= endOfDay(now)
     }
-    if (range === 'week') {
+/*    if (range === 'week') {
       return d >= startOfWeek(now, { weekStartsOn: 1 }) && d <= endOfWeek(now, { weekStartsOn: 1 })
-    }
+    }*/
     if (range === 'month') {
       return d >= startOfMonth(now) && d <= endOfMonth(now)
+    }
+    if (range === 'custom' && customStart && customEnd) {
+      const start = startOfDay(new Date(customStart))
+      const end = endOfDay(new Date(customEnd))
+      return d >= start && d <= end
     }
     return true
   })
@@ -47,12 +52,14 @@ function buildChartData(filtered: Payment[], range: Range) {
     let key: string
     if (range === 'day') {
       key = format(d, 'HH:00')
-    } else if (range === 'week') {
+    } 
+    /*else if (range === 'week') {
       key = format(d, 'EEE dd/MM', { locale: es })
-    } else if (range === 'month') {
+    } */
+    else if (range === 'month') {
       key = format(d, 'dd MMM', { locale: es })
     } else {
-      key = format(d, 'MMM yyyy', { locale: es })
+      key = format(d, 'dd MMM', { locale: es })
     }
     map.set(key, (map.get(key) || 0) + p.amount)
   })
@@ -64,9 +71,10 @@ function buildChartData(filtered: Payment[], range: Range) {
 
 const RANGE_LABELS: Record<Range, string> = {
   day: 'Hoy',
-  week: 'Esta semana',
+  //week: 'Esta semana',
   month: 'Este mes',
   all: 'Todo',
+  custom: 'Personalizado',
 }
 
 export default function PaymentsAnalytics() {
@@ -75,12 +83,14 @@ export default function PaymentsAnalytics() {
   const [showChart, setShowChart] = useState(false)
   const [showForm, setShowForm] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [customStartDate, setCustomStartDate] = useState('')
+  const [customEndDate, setCustomEndDate] = useState('')
 
   // form state
   const [amount, setAmount] = useState<number | ''>('')
   const [concept, setConcept] = useState('')
   const [method, setMethod] = useState<'efectivo' | 'tarjeta' | 'transferencia'>('efectivo')
-  const [date, setDate] = useState<string>(formatISO(new Date()).slice(0, 10))
+  const [datetime, setDatetime] = useState<string>(formatISO(new Date()).slice(0, 16))
 
   useEffect(() => { load() }, [])
 
@@ -94,8 +104,16 @@ export default function PaymentsAnalytics() {
     e.preventDefault()
     const amt = typeof amount === 'number' ? amount : parseFloat(String(amount))
     if (isNaN(amt)) return alert('Cantidad inválida')
+    
+    // Parse datetime-local string and create Date in local timezone, then convert to ISO
+    const [datePart, timePart] = datetime.split('T')
+    const [year, month, day] = datePart.split('-').map(Number)
+    const [hour, minute] = timePart.split(':').map(Number)
+    const dt = new Date(year, month - 1, day, hour, minute, 0)
+    const iso = dt.toISOString()
+    
     await db.payments.add({
-      date: new Date(date).toISOString(),
+      date: iso,
       amount: amt,
       concept,
       method,
@@ -103,12 +121,47 @@ export default function PaymentsAnalytics() {
     setAmount('')
     setConcept('')
     setMethod('efectivo')
-    setDate(formatISO(new Date()).slice(0, 10))
+    setDatetime(formatISO(new Date()).slice(0, 16))
     setShowForm(false)
     load()
   }
 
-  const filtered = filterByRange(allPayments, range)
+  const exportToCSV = () => {
+    if (filtered.length === 0) {
+      alert('No hay pagos para exportar en este período')
+      return
+    }
+
+    // CSV headers
+    const headers = ['Fecha', 'Concepto', 'Monto', 'Método']
+    
+    // CSV rows
+    const rows = filtered.map(p => [
+      format(new Date(p.date), 'dd/MM/yyyy HH:mm', { locale: es }),
+      p.concept || '-',
+      p.amount.toString().replace('.', ','),
+      p.method === 'efectivo' ? 'Efectivo' : p.method === 'tarjeta' ? 'Tarjeta' : 'Transferencia',
+    ])
+
+    // Add total row
+    rows.push(['', 'TOTAL', total.toLocaleString('es-MX', { minimumFractionDigits: 2 }).replace('.', ','), ''])
+
+    // Combine headers and rows
+    const csv = [headers, ...rows].map(row => row.map(cell => `"${cell}"`).join(',')).join('\n')
+
+    // Create blob and download
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' }) // UTF-8 BOM for Excel
+    const link = document.createElement('a')
+    const url = URL.createObjectURL(blob)
+    link.setAttribute('href', url)
+    link.setAttribute('download', `pagos_${format(new Date(), 'yyyy-MM-dd_HHmmss')}.csv`)
+    link.style.visibility = 'hidden'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
+
+  const filtered = range === 'custom' ? filterByRange(allPayments, 'custom', customStartDate, customEndDate) : filterByRange(allPayments, range)
   const total = filtered.reduce((s, p) => s + p.amount, 0)
   const chartData = buildChartData(filtered, range)
 
@@ -152,7 +205,8 @@ export default function PaymentsAnalytics() {
 
       {/* Range filter */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
-        {(['day', 'week', 'month', 'all'] as Range[]).map(r => (
+        {(['day', 'month', 'all'] as Range[]).map(r => (
+    //    {(['day', 'week', 'month', 'all'] as Range[]).map(r => (
           <button
             key={r}
             onClick={() => setRange(r)}
@@ -171,22 +225,81 @@ export default function PaymentsAnalytics() {
             {RANGE_LABELS[r]}
           </button>
         ))}
+        <button
+          onClick={() => setRange('custom')}
+          style={{
+            fontSize: 13,
+            padding: '6px 12px',
+            background: range === 'custom' ? 'var(--primary)' : 'rgba(0,0,0,0.06)',
+            color: range === 'custom' ? '#fff' : 'inherit',
+            border: 'none',
+            borderRadius: 20,
+            cursor: 'pointer',
+            fontWeight: range === 'custom' ? 700 : 400,
+            transition: 'background 0.2s',
+          }}
+        >
+          📅 Personalizado
+        </button>
       </div>
 
+      {/* Custom date range picker */}
+      {range === 'custom' && (
+        <div style={{ display: 'flex', gap: 8, marginBottom: 16, alignItems: 'flex-end', flexWrap: 'wrap' }}>
+          <div>
+            <label style={{ fontSize: 13, color: 'var(--text-light)', display: 'block', marginBottom: 4 }}>Desde</label>
+            <input
+              type="date"
+              value={customStartDate}
+              onChange={(e) => setCustomStartDate(e.target.value)}
+              style={{ padding: '6px 8px', borderRadius: 6, border: '1px solid #dee2e6', fontSize: 13 }}
+            />
+          </div>
+          <div>
+            <label style={{ fontSize: 13, color: 'var(--text-light)', display: 'block', marginBottom: 4 }}>Hasta</label>
+            <input
+              type="date"
+              value={customEndDate}
+              onChange={(e) => setCustomEndDate(e.target.value)}
+              style={{ padding: '6px 8px', borderRadius: 6, border: '1px solid #dee2e6', fontSize: 13 }}
+            />
+          </div>
+          {(customStartDate || customEndDate) && (
+            <button
+              onClick={() => {
+                setCustomStartDate('')
+                setCustomEndDate('')
+              }}
+              style={{ fontSize: 13, padding: '6px 12px', background: 'rgba(0,0,0,0.06)', border: 'none', borderRadius: 6, cursor: 'pointer' }}
+            >
+              Limpiar
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Summary + chart toggle */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
         <div style={{ fontSize: 15, fontWeight: 600 }}>
           Total: <span style={{ color: 'var(--primary)' }}>${total.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span>
           <span style={{ fontWeight: 400, color: 'var(--text-light)', fontSize: 13, marginLeft: 8 }}>
             ({filtered.length} pago{filtered.length !== 1 ? 's' : ''})
           </span>
         </div>
-        <button
-          onClick={() => setShowChart(v => !v)}
-          style={{ fontSize: 13, padding: '6px 12px', background: 'rgba(0,0,0,0.06)', border: 'none', borderRadius: 20, cursor: 'pointer' }}
-        >
-          {showChart ? '🙈 Ocultar gráfica' : '📊 Ver gráfica'}
-        </button>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', flexDirection: 'column' }}>
+          <button
+            onClick={() => setShowChart(v => !v)}
+            style={{ fontSize: 13, padding: '6px 12px', background: 'rgba(0,0,0,0.06)', border: 'none', borderRadius: 20, cursor: 'pointer', color: 'black'}}
+          >
+            {showChart ? '🙈 Ocultar gráfica' : '📊 Ver gráfica'}
+          </button>
+          <button
+            onClick={exportToCSV}
+            style={{ fontSize: 13, padding: '6px 12px', background: 'rgba(0,0,0,0.06)', border: 'none', borderRadius: 20, cursor: 'pointer', color: 'black' }}
+          >
+            📥 Descargar CSV
+          </button>
+        </div>
       </div>
 
       {/* Chart */}
@@ -204,7 +317,7 @@ export default function PaymentsAnalytics() {
 
       {/* Payments list */}
       <h3 style={{ fontSize: 16, fontWeight: 600, marginTop: 0, marginBottom: 12 }}>
-        📋 {RANGE_LABELS[range]} — {filtered.length} pago{filtered.length !== 1 ? 's' : ''}
+        📋 {range === 'custom' && customStartDate && customEndDate ? `${format(new Date(customStartDate), 'dd MMM', { locale: es })} - ${format(new Date(customEndDate), 'dd MMM yyyy', { locale: es })}` : RANGE_LABELS[range]} — {filtered.length} pago{filtered.length !== 1 ? 's' : ''}
       </h3>
 
       {filtered.length === 0 ? (
@@ -246,8 +359,8 @@ export default function PaymentsAnalytics() {
           <h2 style={{ margin: '0 0 16px 0', fontSize: 20, fontWeight: 700 }}>💰 Registrar Pago</h2>
           <form onSubmit={submit}>
             <div style={{ marginBottom: 12 }}>
-              <label>Fecha</label>
-              <input type="date" value={date} onChange={e => setDate(e.target.value)} />
+              <label>Fecha y hora</label>
+              <input type="datetime-local" value={datetime} onChange={e => setDatetime(e.target.value)} required />
             </div>
             <div style={{ marginBottom: 12 }}>
               <label>Cantidad</label>
