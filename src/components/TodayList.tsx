@@ -4,19 +4,23 @@ import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { generateICS } from '../utils/ics'
 import { toGoogleLink, toOutlookLink } from './ExportModal'
-//import React from 'react'
+import Loader from './Loader'
 
 export default function TodayList({date}:{date?:Date}){
   const [items, setItems] = useState<Appointment[]>([])
   const [showCategorized, setShowCategorized] = useState(false)
   const [nowMarker, setNowMarker] = useState<number>(Date.now())
+  const [loading, setLoading] = useState(true)
   const target = date || new Date()
   const dayKey = format(target,'yyyy-MM-dd')
+  const now = new Date(nowMarker)
 
   useEffect(()=>{ load() },[dayKey, nowMarker])
   const load = async ()=>{
+    setLoading(true)
     const all = await db.appointments.where('datetime').startsWith(dayKey).sortBy('datetime')
     setItems(all)
+    setLoading(false)
   }
 
   const refreshOrdering = ()=>{
@@ -25,7 +29,9 @@ export default function TodayList({date}:{date?:Date}){
   }
 
   return (
-    <div>
+    <>
+      {loading && <Loader />}
+      <div>
       <div style={{marginBottom:16}}>
         <h2 style={{margin:'0 0 12px 0',fontSize:20,fontWeight:700}}>📅 {format(target,'PPP',{locale:es})}</h2>
         <div style={{display:'flex',flexDirection:'column',gap:8}}>
@@ -130,17 +136,20 @@ export default function TodayList({date}:{date?:Date}){
                       <div style={{fontSize:14,lineHeight:1.4}}>{it.description}</div>
                     </div>
                   )}
-                  <div className="btn-group" style={{marginTop:8}}>
-                    <button onClick={()=>{const ev={id:it.id,title:it.clientName,description:it.description,start:new Date(it.datetime),end:new Date(new Date(it.datetime).getTime()+30*60000)}; const text=generateICS([{title:ev.title,description:ev.description,start:ev.start,end:ev.end}],'Agenda PWA'); const blob=new Blob([text],{type:'text/calendar;charset=utf-8'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=`${ev.title.replace(/[^a-z0-9]/gi,'_')||'evento'}.ics`; a.click(); URL.revokeObjectURL(url);}} style={{fontSize:13}}>📥 .ics</button>
-                    <a href={toGoogleLink(it.clientName,new Date(it.datetime), new Date(new Date(it.datetime).getTime()+30*60000), it.description)} target="_blank" rel="noreferrer"><button style={{fontSize:13}}>🔵 Google</button></a>
-                    <a href={toOutlookLink(it.clientName,new Date(it.datetime), new Date(new Date(it.datetime).getTime()+30*60000), it.description)} target="_blank" rel="noreferrer"><button style={{fontSize:13}}>📧 Outlook</button></a>
-                  </div>
+                  {(new Date(it.datetime) > now) ? (
+                    <div className="btn-group" style={{marginTop:8}}>
+                      <button onClick={()=>{const ev={id:it.id,title:it.clientName,description:it.description,start:new Date(it.datetime),end:new Date(new Date(it.datetime).getTime()+30*60000)}; const text=generateICS([{title:ev.title,description:ev.description,start:ev.start,end:ev.end}],'Agenda PWA'); const blob=new Blob([text],{type:'text/calendar;charset=utf-8'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=`${ev.title.replace(/[^a-z0-9]/gi,'_')||'evento'}.ics`; a.click(); URL.revokeObjectURL(url);}} style={{fontSize:13}}>📥 .ics</button>
+                      <a href={toGoogleLink(it.clientName,new Date(it.datetime), new Date(new Date(it.datetime).getTime()+30*60000), it.description)} target="_blank" rel="noreferrer"><button style={{fontSize:13}}>🔵 Google</button></a>
+                      <a href={toOutlookLink(it.clientName,new Date(it.datetime), new Date(new Date(it.datetime).getTime()+30*60000), it.description)} target="_blank" rel="noreferrer"><button style={{fontSize:13}}>📧 Outlook</button></a>
+                    </div>
+                  ) : null}
                 </li>
               ))}
             </ul>
           )}
         </div>
       )}
-    </div>
+      </div>
+    </>
   )
 }

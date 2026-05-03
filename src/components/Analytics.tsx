@@ -4,15 +4,21 @@ import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Toolti
 import { Bar } from 'react-chartjs-2'
 import { format, parseISO } from 'date-fns'
 import { es } from 'date-fns/locale'
+import Loader from './Loader'
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend)
 
 export default function Analytics(){
   const [payments, setPayments] = useState<Payment[]>([])
   const [range, setRange] = useState<'week'|'month'|'day'|'all'>('month')
+  const [loading, setLoading] = useState(true)
 
   useEffect(()=>{ load() },[])
-  const load = async ()=> setPayments(await db.payments.toArray())
+  const load = async ()=>{
+    setLoading(true)
+    setPayments(await db.payments.toArray())
+    setLoading(false)
+  }
 
   const grouped = () => {
     if(range==='all'){
@@ -39,20 +45,23 @@ export default function Analytics(){
   const data = {labels: g.labels, datasets: [{label:'Ganancias', data: g.data, backgroundColor: 'rgba(13,110,253,0.7)'}]}
 
   return (
-    <div>
-      <h3>Analítica de ganancias</h3>
-      <div style={{display:'flex',gap:8,marginBottom:8}}>
-        <select value={range} onChange={e=>setRange(e.target.value as any)}>
-          <option value="day">Por día</option>
-          <option value="week">Por semana</option>
-          <option value="month">Por mes</option>
-          <option value="all">Total</option>
-        </select>
-        <button onClick={load}>Refrescar</button>
-      </div>
+    <>
+      {loading && <Loader />}
       <div>
-        <Bar data={data} />
+        <h2 style={{margin:'0 0 16px 0',fontSize:20,fontWeight:700}}>📊 Analítica de ganancias</h2>
+        <div style={{display:'flex',gap:8,marginBottom:12,flexWrap:'wrap'}}>
+          <select value={range} onChange={e=>setRange(e.target.value as any)}>
+            <option value="day">📅 Por día</option>
+            <option value="week">📊 Por semana</option>
+            <option value="month">📈 Por mes</option>
+            <option value="all">💰 Total</option>
+          </select>
+          <button onClick={load} style={{fontSize:13}}>🔄 Refrescar</button>
+        </div>
+        <div style={{background:'#fff',padding:12,borderRadius:12,boxShadow:'0 1px 3px rgba(0,0,0,0.08)'}}>
+          <Bar data={data} />
+        </div>
       </div>
-    </div>
+    </>
   )
 }

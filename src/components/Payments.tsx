@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { db, Payment } from '../db'
 import { formatISO, format, parseISO } from 'date-fns'
 import { es } from 'date-fns/locale'
+import Loader from './Loader'
 
 export default function Payments(){
   const [amount,setAmount] = useState<number | ''>('')
@@ -9,9 +10,14 @@ export default function Payments(){
   const [method,setMethod] = useState<'efectivo'|'tarjeta'|'transferencia'>('efectivo')
   const [date,setDate] = useState<string>(formatISO(new Date()).slice(0,10))
   const [list,setList] = useState<Payment[]>([])
+  const [loading, setLoading] = useState(true)
 
   useEffect(()=>{ load() },[])
-  const load = async ()=> setList(await db.payments.orderBy('date').reverse().toArray())
+  const load = async ()=>{
+    setLoading(true)
+    setList(await db.payments.orderBy('date').reverse().toArray())
+    setLoading(false)
+  }
 
   const submit = async (e:React.FormEvent)=>{
     e.preventDefault()
@@ -24,7 +30,9 @@ export default function Payments(){
   }
 
   return (
-    <div>
+    <>
+      {loading && <Loader />}
+      <div>
       <h2 style={{margin:'0 0 16px 0',fontSize:20,fontWeight:700}}>💰 Registrar pago</h2>
       <form onSubmit={submit} style={{marginBottom:20}}>
         <div style={{marginBottom:12}}>
@@ -79,6 +87,7 @@ export default function Payments(){
           ))}
         </ul>
       )}
-    </div>
+      </div>
+    </>
   )
 }
