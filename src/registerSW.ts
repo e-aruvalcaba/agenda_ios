@@ -10,20 +10,31 @@ export function registerSW(){
   }
   if('serviceWorker' in navigator){
     window.addEventListener('load', ()=>{
-      // BASE_URL es '/agenda_ios/' en producción y '/' en dev
+      // BASE_URL es '/agenda_ios/' en producción
       navigator.serviceWorker.register(import.meta.env.BASE_URL + 'sw.js').then(reg => {
         // Guardar referencia en window para acceso desde App.tsx
         (window as any).swRegistration = reg
         
-        // Escuchar cuando hay un nuevo SW waiting — el navegador detecta esto automáticamente
+        // Estado inicial
+        let isNewWorker = false
+        
+        // Escuchar cuando hay un nuevo SW waiting
         reg.addEventListener('updatefound', () => {
+          console.log('✓ updatefound: hay un nuevo SW instalándose')
           const newWorker = reg.installing
           if (newWorker) {
             newWorker.addEventListener('statechange', () => {
-              if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                // Hay un nuevo SW listo y uno anterior activo = hay actualización
-                console.log('✓ SW Update detected - Banner will show')
-                window.dispatchEvent(new Event('swUpdated'))
+              console.log('SW statechange:', newWorker.state)
+              if (newWorker.state === 'installed') {
+                isNewWorker = true
+                console.log('✓ New SW installed - checking controller')
+                // Disparar evento si hay un SW anterior activo
+                if (navigator.serviceWorker.controller) {
+                  console.log('✓ SW Update detected - Banner will show')
+                  window.dispatchEvent(new Event('swUpdated'))
+                } else {
+                  console.log('ℹ No controller (first install)')
+                }
               }
             })
           }
@@ -37,8 +48,15 @@ export function registerSW(){
           }
         })
         
+        // Si hay un SW en estado waiting, mostrar banner
+        if (reg.waiting) {
+          console.log('✓ Found waiting SW on init')
+          window.dispatchEvent(new Event('swUpdated'))
+        }
+        
         // Verificar actualizaciones solo al cargar y cuando recupera foco
         const checkForUpdates = () => {
+          console.log('Checking for updates...')
           reg.update().then(() => {
             console.log('✓ Checked for SW updates')
           }).catch(e => {
@@ -49,7 +67,7 @@ export function registerSW(){
         // Verificar una sola vez al cargar
         checkForUpdates()
         
-        // Verificar cuando la app vuelve a tener foco (usuario abre la app)
+        // Verificar cuando la app vuelve a tener foco
         window.addEventListener('focus', checkForUpdates)
       }).catch((err)=>{
         console.warn('SW registration failed:', err)
