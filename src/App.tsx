@@ -277,13 +277,15 @@ export default function App() {
       </div>
 
       {/* floating action button */}
-      <button
-        className="fab"
-        aria-label="Nueva cita"
-        onClick={() => setShowModal(true)}
-      >
-        +
-      </button>
+      {tab === "citas" && (
+        <button
+          className="fab"
+          aria-label="Nueva cita"
+          onClick={() => setShowModal(true)}
+        >
+          +
+        </button>
+      )}
 
       {/* bottom navigation (mobile-first) */}
       <div className="bottom-nav" role="navigation" aria-label="Navegación">
