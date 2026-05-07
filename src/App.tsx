@@ -29,11 +29,27 @@ export default function App() {
 
   useEffect(() => {
     const handleSWUpdate = () => {
+      console.log('Update banner triggered')
       setShowUpdatePrompt(true);
     };
     window.addEventListener('swUpdated', handleSWUpdate);
     return () => window.removeEventListener('swUpdated', handleSWUpdate);
   }, []);
+
+  const handleCheckUpdate = async () => {
+    if ((window as any).swRegistration) {
+      const reg = (window as any).swRegistration as ServiceWorkerRegistration
+      try {
+        await reg.update()
+        Swal.fire('Verificado', 'Se verificó si hay actualizaciones disponibles', 'info')
+      } catch (e) {
+        Swal.fire('Error', 'No se pudo verificar actualizaciones', 'error')
+      }
+    } else {
+      Swal.fire('Info', 'Service Worker no disponible', 'info')
+    }
+    setShowMenu(false)
+  }
 
   const handleExport = async () => {
     const data = await db.exportAll();
@@ -246,6 +262,29 @@ export default function App() {
                 />
                 <span>📤 Restaurar datos</span>
               </label>
+              <button
+                onClick={handleCheckUpdate}
+                style={{
+                  width: "100%",
+                  padding: "12px 16px",
+                  border: "none",
+                  background: "none",
+                  textAlign: "left",
+                  cursor: "pointer",
+                  fontSize: 14,
+                  fontWeight: 500,
+                  borderTop: "1px solid #dee2e6",
+                  transition: "background 0.2s",
+                }}
+                onMouseEnter={(e) =>
+                  (e.currentTarget.style.background = "rgba(0,0,0,0.03)")
+                }
+                onMouseLeave={(e) =>
+                  (e.currentTarget.style.background = "none")
+                }
+              >
+                <span style={{color: 'black'}}>🔄 Buscar actualizaciones</span>
+              </button>
             </div>
           )}
         </div>
