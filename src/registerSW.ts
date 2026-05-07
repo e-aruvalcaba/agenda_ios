@@ -1,4 +1,13 @@
 export function registerSW(){
+  if(import.meta.env.DEV){
+    // En dev, desregistrar cualquier SW anterior para evitar conflictos
+    if('serviceWorker' in navigator){
+      navigator.serviceWorker.getRegistrations().then(regs => {
+        regs.forEach(r => r.unregister())
+      })
+    }
+    return
+  }
   if('serviceWorker' in navigator){
     window.addEventListener('load', ()=>{
       // BASE_URL es '/agenda_ios/' en producción y '/' en dev

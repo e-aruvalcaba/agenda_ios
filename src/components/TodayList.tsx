@@ -19,11 +19,25 @@ export default function TodayList({date}:{date?:Date}){
   useEffect(()=>{ load() },[dayKey, nowMarker])
   const load = async ()=>{
     setLoading(true)
-    const all = await db.appointments.where('datetime').startsWith(dayKey).sortBy('datetime')
+    // Construir límites del día en hora LOCAL para comparar correctamente con ISOs guardados en UTC
+    const [y, m, d] = dayKey.split('-').map(Number)
+    const startUTC = new Date(y, m - 1, d, 0, 0, 0, 0).toISOString()
+    const endUTC   = new Date(y, m - 1, d, 23, 59, 59, 999).toISOString()
+    const all = await db.appointments
+      .where('datetime')
+      .between(startUTC, endUTC, true, true)
+      .toArray()
+    all.sort((a, b) => a.datetime.localeCompare(b.datetime))
     setItems(all)
     // load future appointments (from tomorrow onwards)
     const tomorrowKey = format(addDays(target,1),'yyyy-MM-dd')
-    const future = await db.appointments.where('datetime').aboveOrEqual(tomorrowKey).sortBy('datetime')
+    const [ty, tm, td] = tomorrowKey.split('-').map(Number)
+    const tomorrowStartUTC = new Date(ty, tm - 1, td, 0, 0, 0, 0).toISOString()
+    const future = await db.appointments
+      .where('datetime')
+      .aboveOrEqual(tomorrowStartUTC)
+      .toArray()
+    future.sort((a, b) => a.datetime.localeCompare(b.datetime))
     setFutureItems(future)
     setLoading(false)
   }

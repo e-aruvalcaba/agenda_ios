@@ -17,8 +17,15 @@ export default function History(){
   useEffect(()=>{ load() },[date])
   const load = async ()=>{
     setLoading(true)
-    const d = date
-    const list = await db.appointments.where('datetime').startsWith(d).sortBy('datetime')
+    // Construir límites del día en hora LOCAL para comparar correctamente con ISOs guardados en UTC
+    const [y, m, d] = date.split('-').map(Number)
+    const startUTC = new Date(y, m - 1, d, 0, 0, 0, 0).toISOString()
+    const endUTC   = new Date(y, m - 1, d, 23, 59, 59, 999).toISOString()
+    const list = await db.appointments
+      .where('datetime')
+      .between(startUTC, endUTC, true, true)
+      .toArray()
+    list.sort((a, b) => a.datetime.localeCompare(b.datetime))
     setItems(list)
     setLoading(false)
   }

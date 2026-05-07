@@ -36,8 +36,11 @@ function filterByRange(payments: Payment[], range: Range, customStart?: string, 
       return d >= startOfMonth(now) && d <= endOfMonth(now)
     }
     if (range === 'custom' && customStart && customEnd) {
-      const start = startOfDay(new Date(customStart))
-      const end = endOfDay(new Date(customEnd))
+      // Parsear como fecha LOCAL para evitar desfase UTC
+      const [sy, sm, sd] = customStart.split('-').map(Number)
+      const [ey, em, ed] = customEnd.split('-').map(Number)
+      const start = new Date(sy, sm - 1, sd, 0, 0, 0, 0)
+      const end   = new Date(ey, em - 1, ed, 23, 59, 59, 999)
       return d >= start && d <= end
     }
     return true
@@ -358,7 +361,11 @@ export default function PaymentsAnalytics() {
 
       {/* Payments list */}
       <h3 style={{ fontSize: 16, fontWeight: 600, marginTop: 0, marginBottom: 12 }}>
-        📋 {range === 'custom' && customStartDate && customEndDate ? `${format(new Date(customStartDate), 'dd MMM', { locale: es })} - ${format(new Date(customEndDate), 'dd MMM yyyy', { locale: es })}` : RANGE_LABELS[range]} — {filtered.length} pago{filtered.length !== 1 ? 's' : ''}
+        📋 {range === 'custom' && customStartDate && customEndDate ? (() => {
+          const [sy, sm, sd] = customStartDate.split('-').map(Number)
+          const [ey, em, ed] = customEndDate.split('-').map(Number)
+          return `${format(new Date(sy, sm - 1, sd), 'dd MMM', { locale: es })} - ${format(new Date(ey, em - 1, ed), 'dd MMM yyyy', { locale: es })}`
+        })() : RANGE_LABELS[range]} — {filtered.length} pago{filtered.length !== 1 ? 's' : ''}
       </h3>
 
       {filtered.length === 0 ? (

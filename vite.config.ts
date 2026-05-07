@@ -1,8 +1,8 @@
 import { defineConfig } from 'vite'
 
-export default defineConfig({
-  base: '/agenda_ios/',
+export default defineConfig(({ command }) => ({
+  base: command === 'build' ? '/agenda_ios/' : '/',
   build: {
     outDir: 'dist'
   }
-})
+}))
