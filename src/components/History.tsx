@@ -1,36 +1,64 @@
 import React, { useEffect, useState } from 'react'
 import { db, Appointment } from '../db'
-import { format, parseISO } from 'date-fns'
+import { format, parseISO, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfDay, endOfDay } from 'date-fns'
 import { es } from 'date-fns/locale'
 import Loader from './Loader'
 import Modal from './Modal'
 import AppointmentForm from './AppointmentForm'
 import Swal from 'sweetalert2'
 
+type Range = 'day' | 'week' | 'month' | 'custom'
+
+function filterByRange(appointments: Appointment[], range: Range, customStart?: string, customEnd?: string): Appointment[] {
+  const now = new Date()
+  return appointments.filter(a => {
+    const d = new Date(a.datetime)
+    if (range === 'day') {
+      return d >= startOfDay(now) && d <= endOfDay(now)
+    }
+    if (range === 'week') {
+      return d >= startOfWeek(now, { weekStartsOn: 1 }) && d <= endOfWeek(now, { weekStartsOn: 1 })
+    }
+    if (range === 'month') {
+      return d >= startOfMonth(now) && d <= endOfMonth(now)
+    }
+    if (range === 'custom' && customStart && customEnd) {
+      const [sy, sm, sd] = customStart.split('-').map(Number)
+      const [ey, em, ed] = customEnd.split('-').map(Number)
+      const start = new Date(sy, sm - 1, sd, 0, 0, 0, 0)
+      const end   = new Date(ey, em - 1, ed, 23, 59, 59, 999)
+      return d >= start && d <= end
+    }
+    return true
+  })
+}
+
+const RANGE_LABELS: Record<Range, string> = {
+  day: 'Hoy',
+  week: 'Esta semana',
+  month: 'Este mes',
+  custom: 'Personalizado',
+}
+
 export default function History(){
-  const [date, setDate] = useState<string>(format(new Date(),'yyyy-MM-dd'))
-  const [items, setItems] = useState<Appointment[]>([])
-  const [loading, setLoading] = useState(false)
+  const [allAppointments, setAllAppointments] = useState<Appointment[]>([])
+  const [range, setRange] = useState<Range>('day')
+  const [customStartDate, setCustomStartDate] = useState('')
+  const [customEndDate, setCustomEndDate] = useState('')
+  const [loading, setLoading] = useState(true)
   const [editingAppointment, setEditingAppointment] = useState<Appointment | null>(null)
   const [showEditModal, setShowEditModal] = useState(false)
 
-  useEffect(()=>{ load() },[date])
+  useEffect(()=>{ load() },[])
   const load = async ()=>{
     setLoading(true)
-    // Construir límites del día en hora LOCAL para comparar correctamente con ISOs guardados en UTC
-    const [y, m, d] = date.split('-').map(Number)
-    const startUTC = new Date(y, m - 1, d, 0, 0, 0, 0).toISOString()
-    const endUTC   = new Date(y, m - 1, d, 23, 59, 59, 999).toISOString()
-    const list = await db.appointments
-      .where('datetime')
-      .between(startUTC, endUTC, true, true)
-      .toArray()
-    list.sort((a, b) => a.datetime.localeCompare(b.datetime))
-    setItems(list)
+    const list = await db.appointments.orderBy('datetime').toArray()
+    setAllAppointments(list)
     setLoading(false)
   }
 
   const exportToCSV = () => {
+    const items = range === 'custom' ? filterByRange(allAppointments, 'custom', customStartDate, customEndDate) : filterByRange(allAppointments, range)
     if (!items || items.length === 0) {
       Swal.fire('Advertencia', 'No hay citas para exportar en este filtro', 'warning')
       return
@@ -49,7 +77,7 @@ export default function History(){
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `citas_${date}.csv`
+    a.download = `citas_${format(new Date(),'yyyy-MM-dd_HHmmss')}.csv`
     document.body.appendChild(a)
     a.click()
     document.body.removeChild(a)
@@ -89,23 +117,105 @@ export default function History(){
     handleEditClose()
   }
 
+  const items = range === 'custom' ? filterByRange(allAppointments, 'custom', customStartDate, customEndDate) : filterByRange(allAppointments, range)
+
   return (
     <>
       {loading && <Loader />}
       <div>
         <h2 style={{margin:'0 0 16px 0',fontSize:20,fontWeight:700}}>📜 Historial de citas</h2>
-        <div style={{display:'flex',gap:8,alignItems:'center',marginBottom:12,flexWrap:'wrap', width: '100%'}}>
-          <label style={{fontSize:14,fontWeight:500}}>Seleccionar fecha:</label>
-          <input type="date" value={date} onChange={e=>setDate(e.target.value)} />
-          {/* <button onClick={load} style={{fontSize:13}}>🔍 Buscar</button> */}
 
+        {/* Range filter */}
+        <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
+          {(['day', 'week', 'month'] as Range[]).map(r => (
+            <button
+              key={r}
+              onClick={() => setRange(r)}
+              style={{
+                fontSize: 13,
+                padding: '6px 12px',
+                background: range === r ? 'var(--primary)' : 'rgba(0,0,0,0.06)',
+                color: range === r ? '#fff' : 'inherit',
+                border: 'none',
+                borderRadius: 20,
+                cursor: 'pointer',
+                fontWeight: range === r ? 700 : 400,
+                transition: 'background 0.2s',
+              }}
+            >
+              {RANGE_LABELS[r]}
+            </button>
+          ))}
+          <button
+            onClick={() => setRange('custom')}
+            style={{
+              fontSize: 13,
+              padding: '6px 12px',
+              background: range === 'custom' ? 'var(--primary)' : 'rgba(0,0,0,0.06)',
+              color: range === 'custom' ? '#fff' : 'inherit',
+              border: 'none',
+              borderRadius: 20,
+              cursor: 'pointer',
+              fontWeight: range === 'custom' ? 700 : 400,
+              transition: 'background 0.2s',
+            }}
+          >
+            📅 Personalizado
+          </button>
         </div>
-          <div style={{display: 'flex', justifyContent: 'flex-end'}}>
-          <button onClick={exportToCSV} style={{fontSize:13}}>📥 Descargar CSV</button>
 
+        {/* Custom date range picker */}
+        {range === 'custom' && (
+          <div style={{ display: 'flex', gap: 8, marginBottom: 16, alignItems: 'flex-end', flexWrap: 'wrap' }}>
+            <div>
+              <label style={{ fontSize: 13, color: 'var(--text-light)', display: 'block', marginBottom: 4 }}>Desde</label>
+              <input
+                type="date"
+                value={customStartDate}
+                onChange={(e) => setCustomStartDate(e.target.value)}
+                style={{ padding: '6px 8px', borderRadius: 6, border: '1px solid #dee2e6', fontSize: 13 }}
+              />
+            </div>
+            <div>
+              <label style={{ fontSize: 13, color: 'var(--text-light)', display: 'block', marginBottom: 4 }}>Hasta</label>
+              <input
+                type="date"
+                value={customEndDate}
+                onChange={(e) => setCustomEndDate(e.target.value)}
+                style={{ padding: '6px 8px', borderRadius: 6, border: '1px solid #dee2e6', fontSize: 13 }}
+              />
+            </div>
+            {(customStartDate || customEndDate) && (
+              <button
+                onClick={() => {
+                  setCustomStartDate('')
+                  setCustomEndDate('')
+                }}
+                style={{ fontSize: 13, padding: '6px 12px', background: 'rgba(0,0,0,0.06)', border: 'none', borderRadius: 6, cursor: 'pointer' }}
+              >
+                Limpiar
+              </button>
+            )}
           </div>
+        )}
+
+        {/* Summary + export */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
+          <div style={{ fontSize: 15, fontWeight: 600 }}>
+            {range === 'custom' && customStartDate && customEndDate ? (() => {
+              const [sy, sm, sd] = customStartDate.split('-').map(Number)
+              const [ey, em, ed] = customEndDate.split('-').map(Number)
+              return `${format(new Date(sy, sm - 1, sd), 'dd MMM', { locale: es })} - ${format(new Date(ey, em - 1, ed), 'dd MMM yyyy', { locale: es })}`
+            })() : RANGE_LABELS[range]}
+            <span style={{ fontWeight: 400, color: 'var(--text-light)', fontSize: 13, marginLeft: 8 }}>
+              ({items.length} cita{items.length !== 1 ? 's' : ''})
+            </span>
+          </div>
+          <button onClick={exportToCSV} style={{fontSize:13}}>📥 Descargar CSV</button>
+        </div>
+
         {items.length===0 ? (
-          <div className="card small" style={{padding:16,textAlign:'center'}}>📭 No hay citas para {format(parseISO(date),'PPP',{locale:es})}</div>
+          <div className="card small" style={{padding:16,textAlign:'center'}}>📭 No hay citas en este período</div>
         ) : (
           <ul style={{paddingLeft:0,listStyle:'none'}}>
             {items.map(it=> (
@@ -116,8 +226,8 @@ export default function History(){
                     <div style={{fontWeight:700,fontSize:16}}>{it.clientName}</div>
                   </div>
                   <div style={{textAlign:'right',background:'rgba(13,110,253,0.1)',padding:'6px 10px',borderRadius:6}}>
-                    <div style={{fontSize:12,color:'var(--text-light)',marginBottom:2}}>Hora</div>
-                    <div style={{fontWeight:600,fontSize:15,color:'var(--primary)'}}>{format(new Date(it.datetime),'h:mm a',{locale:es})}</div>
+                    <div style={{fontSize:12,color:'var(--text-light)',marginBottom:2}}>Fecha y hora</div>
+                    <div style={{fontWeight:600,fontSize:15,color:'var(--primary)'}}>{format(new Date(it.datetime),'dd MMM, h:mm a',{locale:es})}</div>
                   </div>
                 </div>
                 {it.description && (
