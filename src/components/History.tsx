@@ -1,13 +1,13 @@
 import React, { useEffect, useState, useRef } from 'react'
 import { db, Appointment } from '../db'
-import { format, parseISO, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfDay, endOfDay } from 'date-fns'
+import { format, parseISO, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfDay, endOfDay, addWeeks } from 'date-fns'
 import { es } from 'date-fns/locale'
 import Loader from './Loader'
 import Modal from './Modal'
 import AppointmentForm from './AppointmentForm'
 import Swal from 'sweetalert2'
 
-type Range = 'day' | 'week' | 'month' | 'custom'
+type Range = 'day' | 'week' | 'nextWeek' | 'month' | 'custom'
 
 function filterByRange(appointments: Appointment[], range: Range, customStart?: string, customEnd?: string): Appointment[] {
   const now = new Date()
@@ -18,6 +18,10 @@ function filterByRange(appointments: Appointment[], range: Range, customStart?: 
     }
     if (range === 'week') {
       return d >= startOfWeek(now, { weekStartsOn: 1 }) && d <= endOfWeek(now, { weekStartsOn: 1 })
+    }
+    if (range === 'nextWeek') {
+      const next = addWeeks(now, 1)
+      return d >= startOfWeek(next, { weekStartsOn: 1 }) && d <= endOfWeek(next, { weekStartsOn: 1 })
     }
     if (range === 'month') {
       return d >= startOfMonth(now) && d <= endOfMonth(now)
@@ -36,6 +40,7 @@ function filterByRange(appointments: Appointment[], range: Range, customStart?: 
 const RANGE_LABELS: Record<Range, string> = {
   day: 'Hoy',
   week: 'Esta semana',
+  nextWeek: 'Próxima semana',
   month: 'Este mes',
   custom: 'Personalizado',
 }
@@ -161,7 +166,7 @@ export default function History(){
 
           {menuOpen && (
             <div style={{ position: 'absolute', right: 0, top: '100%', marginTop: 8, background: '#fff', boxShadow: '0 6px 18px rgba(0,0,0,0.08)', borderRadius: 8, padding: 8, zIndex: 50, minWidth: 160 }}>
-              {(['day', 'week', 'month', 'custom'] as Range[]).map(r => (
+              {(['day', 'week', 'nextWeek', 'month', 'custom'] as Range[]).map(r => (
                 <div
                   key={r}
                   onClick={() => { setRange(r); setMenuOpen(false) }}
