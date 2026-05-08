@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useRef } from 'react'
 import { db, Appointment } from '../db'
 import { format, parseISO, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfDay, endOfDay } from 'date-fns'
 import { es } from 'date-fns/locale'
@@ -43,6 +43,8 @@ const RANGE_LABELS: Record<Range, string> = {
 export default function History(){
   const [allAppointments, setAllAppointments] = useState<Appointment[]>([])
   const [range, setRange] = useState<Range>('day')
+  const [menuOpen, setMenuOpen] = useState(false)
+  const menuRef = useRef<HTMLDivElement | null>(null)
   const [customStartDate, setCustomStartDate] = useState('')
   const [customEndDate, setCustomEndDate] = useState('')
   const [loading, setLoading] = useState(true)
@@ -50,6 +52,15 @@ export default function History(){
   const [showEditModal, setShowEditModal] = useState(false)
 
   useEffect(()=>{ load() },[])
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
   const load = async ()=>{
     setLoading(true)
     const list = await db.appointments.orderBy('datetime').toArray()
@@ -125,43 +136,48 @@ export default function History(){
       <div>
         <h2 style={{margin:'0 0 16px 0',fontSize:20,fontWeight:700}}>📜 Historial de citas</h2>
 
-        {/* Range filter */}
-        <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
-          {(['day', 'week', 'month'] as Range[]).map(r => (
+        {/* Range filter (dropdown) */}
+        <div style={{ marginBottom: 16, position: 'relative', display: 'flex', justifyContent: 'flex-end' }} ref={menuRef}>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', justifyContent: 'flex-end', color: 'black' }}>
             <button
-              key={r}
-              onClick={() => setRange(r)}
+              onClick={() => setMenuOpen(!menuOpen)}
               style={{
                 fontSize: 13,
                 padding: '6px 12px',
-                background: range === r ? 'var(--primary)' : 'rgba(0,0,0,0.06)',
-                color: range === r ? '#fff' : 'inherit',
+                background: 'rgba(0,0,0,0.06)',
                 border: 'none',
                 borderRadius: 20,
                 cursor: 'pointer',
-                fontWeight: range === r ? 700 : 400,
-                transition: 'background 0.2s',
+                fontWeight: 500,
+                color: 'black'
               }}
             >
-              {RANGE_LABELS[r]}
+              Filtro de citas ▾
             </button>
-          ))}
-          <button
-            onClick={() => setRange('custom')}
-            style={{
-              fontSize: 13,
-              padding: '6px 12px',
-              background: range === 'custom' ? 'var(--primary)' : 'rgba(0,0,0,0.06)',
-              color: range === 'custom' ? '#fff' : 'inherit',
-              border: 'none',
-              borderRadius: 20,
-              cursor: 'pointer',
-              fontWeight: range === 'custom' ? 700 : 400,
-              transition: 'background 0.2s',
-            }}
-          >
-            📅 Personalizado
-          </button>
+            <div style={{ fontSize: 13, color: 'var(--text-light)' }}>
+              <span style={{ marginLeft: 4 }}>{/* space for layout */}</span>
+            </div>
+          </div>
+
+          {menuOpen && (
+            <div style={{ position: 'absolute', right: 0, top: '100%', marginTop: 8, background: '#fff', boxShadow: '0 6px 18px rgba(0,0,0,0.08)', borderRadius: 8, padding: 8, zIndex: 50, minWidth: 160 }}>
+              {(['day', 'week', 'month', 'custom'] as Range[]).map(r => (
+                <div
+                  key={r}
+                  onClick={() => { setRange(r); setMenuOpen(false) }}
+                  style={{
+                    padding: '8px 12px',
+                    cursor: 'pointer',
+                    borderRadius: 6,
+                    background: range === r ? 'rgba(0,0,0,0.06)' : 'transparent',
+                    fontWeight: range === r ? 700 : 500,
+                  }}
+                >
+                  {RANGE_LABELS[r]}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Custom date range picker */}
