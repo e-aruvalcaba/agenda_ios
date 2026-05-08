@@ -120,7 +120,10 @@ export default function TodayList({date}:{date?:Date}){
                         <div style={{marginTop:8}}>
                           {Object.keys(grouped).map(dk=> (
                             <div key={dk} style={{marginBottom:12}}>
-                              <div style={{fontSize:14,fontWeight:700,marginBottom:6}}>{format(new Date(dk),'PPP',{locale:es})}</div>
+                              <div style={{fontSize:14,fontWeight:700,marginBottom:6, display: 'flex', flexDirection: 'column'}}>
+                                <div style={{fontSize:14}}>{(() => { const day = format(new Date(dk), 'EEEE', { locale: es }); return day.charAt(0).toUpperCase() + day.slice(1) })()}</div>
+                                <div style={{fontSize:13, fontWeight:500, color:'var(--text-light)'}}>{format(new Date(dk), "d 'de' MMM yyyy", { locale: es })}</div>
+                              </div>
                               <ul style={{paddingLeft:0,listStyle:'none'}}>
                                 {grouped[dk].map(it=> (
                                   <li key={it.id} className="card" style={{marginBottom:8}}>
@@ -130,8 +133,11 @@ export default function TodayList({date}:{date?:Date}){
                                         <div style={{fontWeight:700,fontSize:16}}>{it.clientName}</div>
                                       </div>
                                       <div style={{textAlign:'right',background:'rgba(13,110,253,0.1)',padding:'6px 10px',borderRadius:6}}>
-                                        <div style={{fontSize:12,color:'var(--text-light)',marginBottom:2}}>Hora</div>
-                                        <div style={{fontWeight:600,fontSize:15,color:'var(--primary)'}}>{format(new Date(it.datetime),'h:mm a',{locale:es})}</div>
+                                        <div style={{fontSize:12,color:'var(--text-light)',marginBottom:6}}>Fecha y hora</div>
+                                        <div style={{fontWeight:600,fontSize:15,color:'var(--primary)', display: 'flex', flexDirection: 'column', alignItems: 'flex-end'}}>
+                                          <div style={{fontSize:14, marginBottom:6}}>{(() => { const day = format(new Date(it.datetime), 'EEEE', { locale: es }); return day.charAt(0).toUpperCase() + day.slice(1) })()}</div>
+                                          <div style={{fontSize:13}}>{format(new Date(it.datetime), "d 'de' MMM, HH:mm", { locale: es })}</div>
+                                        </div>
                                       </div>
                                     </div>
                                     {it.description && (
@@ -161,8 +167,11 @@ export default function TodayList({date}:{date?:Date}){
                               <div style={{fontWeight:700,fontSize:16}}>{it.clientName}</div>
                             </div>
                             <div style={{textAlign:'right',background:'rgba(108,117,125,0.1)',padding:'6px 10px',borderRadius:6}}>
-                              <div style={{fontSize:12,color:'var(--text-light)',marginBottom:2}}>Hora</div>
-                              <div style={{fontWeight:600,fontSize:15,color:'#6c757d'}}>{format(new Date(it.datetime),'h:mm a',{locale:es})}</div>
+                              <div style={{fontSize:12,color:'var(--text-light)',marginBottom:6}}>Fecha y hora</div>
+                              <div style={{fontWeight:600,fontSize:15,color:'#6c757d', display: 'flex', flexDirection: 'column', alignItems: 'flex-end'}}>
+                                <div style={{fontSize:14, marginBottom:6}}>{(() => { const day = format(new Date(it.datetime), 'EEEE', { locale: es }); return day.charAt(0).toUpperCase() + day.slice(1) })()}</div>
+                                <div style={{fontSize:13}}>{format(new Date(it.datetime), "d 'de' MMM, HH:mm", { locale: es })}</div>
+                              </div>
                             </div>
                           </div>
                           {it.description && (
