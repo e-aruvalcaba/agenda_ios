@@ -248,7 +248,13 @@ export default function History(){
                   </div>
                   <div style={{textAlign:'right',background:'rgba(13,110,253,0.1)',padding:'6px 10px',borderRadius:6}}>
                     <div style={{fontSize:12,color:'var(--text-light)',marginBottom:2}}>Fecha y hora</div>
-                    <div style={{fontWeight:600,fontSize:15,color:'var(--primary)'}}>{format(new Date(it.datetime),'dd MMM, h:mm a',{locale:es})}</div>
+                    <div style={{fontWeight:600,fontSize:15,color:'var(--primary)', display: 'flex', flexDirection: 'column', alignItems: 'flex-end'}}>
+                      <div style={{fontSize:14, marginBottom:6}}>{(() => {
+                        const day = format(new Date(it.datetime), 'EEEE', { locale: es })
+                        return day.charAt(0).toUpperCase() + day.slice(1)
+                      })()}</div>
+                      <div style={{fontSize:13}}>{format(new Date(it.datetime),"d 'de' MMM, HH:mm",{locale:es})}</div>
+                    </div>
                   </div>
                 </div>
                 {it.description && (
