@@ -20,7 +20,7 @@ import Swal from 'sweetalert2'
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend)
 
-type Range = 'day' | 'month' | 'all' | 'custom'
+type Range = 'day' | 'week' | 'month' | 'all' | 'custom'
 
 function filterByRange(payments: Payment[], range: Range, customStart?: string, customEnd?: string): Payment[] {
   const now = new Date()
@@ -29,9 +29,9 @@ function filterByRange(payments: Payment[], range: Range, customStart?: string, 
     if (range === 'day') {
       return d >= startOfDay(now) && d <= endOfDay(now)
     }
-/*    if (range === 'week') {
+    if (range === 'week') {
       return d >= startOfWeek(now, { weekStartsOn: 1 }) && d <= endOfWeek(now, { weekStartsOn: 1 })
-    }*/
+    }
     if (range === 'month') {
       return d >= startOfMonth(now) && d <= endOfMonth(now)
     }
@@ -58,9 +58,9 @@ function buildChartData(filtered: Payment[], range: Range) {
     if (range === 'day') {
       key = format(d, 'HH:00')
     } 
-    /*else if (range === 'week') {
+    else if (range === 'week') {
       key = format(d, 'EEE dd/MM', { locale: es })
-    } */
+    }
     else if (range === 'month') {
       key = format(d, 'dd MMM', { locale: es })
     } else {
@@ -76,7 +76,7 @@ function buildChartData(filtered: Payment[], range: Range) {
 
 const RANGE_LABELS: Record<Range, string> = {
   day: 'Hoy',
-  //week: 'Esta semana',
+  week: 'Esta semana',
   month: 'Este mes',
   all: 'Todo',
   custom: 'Personalizado',
@@ -249,8 +249,7 @@ export default function PaymentsAnalytics() {
 
       {/* Range filter */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
-        {(['day', 'month', 'all'] as Range[]).map(r => (
-    //    {(['day', 'week', 'month', 'all'] as Range[]).map(r => (
+        {(['day', 'week', 'month', 'all'] as Range[]).map(r => (
           <button
             key={r}
             onClick={() => setRange(r)}

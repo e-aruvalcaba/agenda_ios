@@ -7,7 +7,7 @@
      - activate: limpia cachés antiguas y reclama clientes de inmediato
 */
 
-const CACHE_NAME = 'agenda-v7'
+const CACHE_NAME = 'agenda-v1.2'
 const BASE = '/agenda_ios'
 
 const PRECACHE_URLS = [
