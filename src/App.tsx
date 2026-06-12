@@ -20,11 +20,40 @@ export default function App() {
   const [importData, setImportData] = useState<any>(null);
   const [existingCounts, setExistingCounts] = useState({ appts: 0, pays: 0 });
   const [showUpdatePrompt, setShowUpdatePrompt] = useState(false);
+  const [appDisabled, setAppDisabled] = useState(false);
+  const [disabledMessage, setDisabledMessage] = useState(
+    "Esta aplicación se ha desactivado, puedes eliminarla manteniendo presionado sobre el icono"
+  );
 
   useEffect(() => {
     if (navigator.storage && (navigator as any).storage.persist) {
       (navigator as any).storage.persist();
     }
+  }, []);
+
+  // Kill switch remoto: la app consulta kill-switch.json al cargar y al recuperar
+  // foco (el mismo momento en que el dispositivo verifica el Service Worker). Si la
+  // bandera está activa, se bloquea la app. Para reactivarla, editar el JSON.
+  useEffect(() => {
+    const flagUrl = import.meta.env.BASE_URL + "kill-switch.json";
+    const checkKillSwitch = async () => {
+      try {
+        const res = await fetch(`${flagUrl}?t=${Date.now()}`, { cache: "no-store" });
+        if (!res.ok) return; // fail-open: si no se puede leer la bandera, no bloquear
+        const data = await res.json();
+        if (data?.disabled) {
+          if (data.message) setDisabledMessage(data.message);
+          setAppDisabled(true);
+        } else {
+          setAppDisabled(false);
+        }
+      } catch {
+        // Sin conexión: no bloquear para no romper el uso offline
+      }
+    };
+    checkKillSwitch();
+    window.addEventListener("focus", checkKillSwitch);
+    return () => window.removeEventListener("focus", checkKillSwitch);
   }, []);
 
   useEffect(() => {
@@ -119,6 +148,66 @@ export default function App() {
   const handleSaved = () => {
     setRefreshKey((k) => k + 1);
   };
+
+  if (appDisabled) {
+    return (
+      <div
+        style={{
+          position: "fixed",
+          inset: 0,
+          background: "#111",
+          color: "#fff",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          textAlign: "center",
+          padding: "32px",
+          zIndex: 100000,
+        }}
+      >
+        <div style={{ fontSize: 72, marginBottom: 24 }}>🚫</div>
+        <p
+          style={{
+            fontSize: 20,
+            fontWeight: 600,
+            lineHeight: 1.5,
+            maxWidth: 420,
+            margin: 0,
+          }}
+        >
+          {disabledMessage}
+        </p>
+        <p
+          style={{
+            fontSize: 15,
+            lineHeight: 1.5,
+            maxWidth: 420,
+            margin: "16px 0 0",
+            color: "#ccc",
+          }}
+        >
+          Antes de eliminarla, respalda tus datos para no perderlos.
+        </p>
+        <button
+          onClick={handleExport}
+          style={{
+            marginTop: 24,
+            background: "#0d6efd",
+            color: "#fff",
+            border: "none",
+            padding: "14px 24px",
+            borderRadius: 8,
+            cursor: "pointer",
+            fontSize: 16,
+            fontWeight: 700,
+          }}
+        >
+          📤 Respaldar mis datos
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="app">
