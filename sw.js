@@ -7,7 +7,7 @@
      - activate: limpia cachés antiguas y reclama clientes de inmediato
 */
 
-const CACHE_NAME = 'agenda-v1.2.1'
+const CACHE_NAME = 'agenda-v1.3.0'
 const BASE = '/agenda_ios'
 
 const PRECACHE_URLS = [
@@ -55,6 +55,15 @@ self.addEventListener('fetch', event => {
   // Solo interceptar GET y peticiones del mismo origen
   if (request.method !== 'GET') return
   if (url.origin !== self.location.origin) return
+
+  // Kill switch: SIEMPRE desde red (network-first) para que el toggle surta
+  // efecto sin quedar atrapado en caché. Si no hay red, cae a caché.
+  if (url.pathname.endsWith('/kill-switch.json')) {
+    event.respondWith(
+      fetch(request).catch(() => caches.match(request))
+    )
+    return
+  }
 
   // Navegación (SPA): siempre sirve el shell desde caché para funcionar offline
   if (request.mode === 'navigate') {
